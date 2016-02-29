@@ -1,0 +1,10 @@
+﻿#### FUNCTION_NAME
+>* **Parameters:**
+LINES_OF_TEXT_IN_PARAMS_SECTION
+>* **Returns:**
+LINES_OF_TEXT_IN_RETURNS_SECTION
+>* **Remarks:**
+TEXT_IN_REMARKS_SECTION
+ 
+***
+
