@@ -4,6 +4,12 @@ Imports System.Text.RegularExpressions
 Public Class Form1
 
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
+        'Check validity.
+        If File.Exists(TextBox1.Text) = False Or Directory.Exists(TextBox2.Text) = False Then
+            MsgBox("One of the paths are invalid, Please check.")
+            Exit Sub
+        End If
+
         'First of all get a list of all the files in that dir.
         Dim files As String() = TextBox1.Text.Split("|")
 
@@ -39,7 +45,7 @@ Public Class Form1
                 funcMark = funcMark.Replace("LINES_OF_TEXT_IN_RETURNS_SECTION", prepareString(pwnDoc.Returns))
                 Dim pars As String = ""
                 For Each par In pwnDoc.Parameters
-                    pars += (">" + vbTab + "* `PARAM`: PARAM_INFO" + vbCrLf).Replace("PARAM", par.paramName).Replace("PARAM_INFO", par.paramExplain)
+                    pars += (">" + vbTab + "* `PARAM_NAME`: PARAM_INFO" + vbCrLf).Replace("PARAM_NAME", par.paramName).Replace("PARAM_INFO", par.paramExplain)
                 Next
                 funcMark = funcMark.Replace("LINES_OF_TEXT_IN_PARAMS_SECTION", pars.Trim)
 
