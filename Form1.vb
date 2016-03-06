@@ -3,66 +3,85 @@ Imports System.Text.RegularExpressions
 
 Public Class Form1
 
+    Private Sub ParseAndAppendFile(targetFile As String, ByRef mainPage As String)
+        'Get the files content.
+        Dim fileCode As String = My.Computer.FileSystem.ReadAllText(targetFile)
+
+        'Create the file's markdown page.
+        Dim filePage As String = ""
+
+        'Add in the mainPage about this file.
+        Dim tmpMain As String = ""
+        tmpMain += ("## [FILE_NAME](FILE_NAME)" + vbCrLf + vbCrLf).Replace("FILE_NAME", Path.GetFileNameWithoutExtension(File))
+
+        'Loop through all the pawndoc's
+        For Each mtch As Match In Regex.Matches(fileCode, "\/\*\*([\s\S]*?)\*\*\/")
+            'Parse the doc.
+            Dim pwnDoc As New PawnDoc(mtch.Groups(1).Value)
+
+            'Create the var to store the template.
+            Dim funcMark As String = My.Resources.funcTemplate1
+
+            'Check if valid.
+            If pwnDoc.Summary = "" Or pwnDoc.Summary = "-" Then Continue For
+
+            'Replace all variables.
+            funcMark = funcMark.Replace("FUNCTION_NAME", prepareFuncName(pwnDoc.Summary))
+            funcMark = funcMark.Replace("TEXT_IN_REMARKS_SECTION", prepareString(pwnDoc.Remarks, False))
+            funcMark = funcMark.Replace("LINES_OF_TEXT_IN_RETURNS_SECTION", prepareString(pwnDoc.Returns))
+            Dim pars As String = ""
+            For Each par In pwnDoc.Parameters
+                pars += (">" + vbTab + "* `PARAM_NAME`: PARAM_INFO" + vbCrLf).Replace("PARAM_NAME", par.paramName).Replace("PARAM_INFO", par.paramExplain)
+            Next
+            funcMark = funcMark.Replace("LINES_OF_TEXT_IN_PARAMS_SECTION", pars.Trim)
+
+            'Append to the file's page.
+            filePage += funcMark
+
+            'Append to the main page.
+            tmpMain += ("* [FUNCTION_NAME_UP](FILE_NAME#FUNCTION_NAME_UNDER)" + vbCrLf).Replace("FILE_NAME", Path.GetFileNameWithoutExtension(targetFile)).Replace("FUNCTION_NAME_UP", prepareFuncName(pwnDoc.Summary)).Replace("FUNCTION_NAME_UNDER", prepareFuncName(pwnDoc.Summary, True))
+        Next
+
+        'Now after we have all the files functions save it.
+        If filePage <> "" Then
+            'Save the actual file.
+            My.Computer.FileSystem.WriteAllText(TextBox2.Text + "/" + Path.GetFileNameWithoutExtension(targetFile) + ".md", filePage, False)
+
+            'Append to main file.
+            mainPage += tmpMain + vbCrLf + vbCrLf
+        End If
+    End Sub
+
     Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
-        'Check validity.
-        If File.Exists(TextBox1.Text) = False Or Directory.Exists(TextBox2.Text) = False Then
-            MsgBox("One of the paths are invalid, Please check.")
+        'Check output folder validity.
+        If Directory.Exists(TextBox2.Text) = False Then
+            MsgBox("The output directory is invalid.")
             Exit Sub
         End If
 
-        'First of all get a list of all the files in that dir.
+        'Get a list of all the files in that dir.
         Dim files As String() = TextBox1.Text.Split("|")
 
         'Super Globals.
         Dim mainPage As String = ""
 
         'Loop through all of them file by file now.
-        For Each file As String In files
-            'Get the files content.
-            Dim fileCode As String = My.Computer.FileSystem.ReadAllText(file)
+        For Each fle As String In files
+            'Check the file/folder.
+            If File.Exists(fle) = False And Directory.Exists(fle) = False Then
+                MsgBox("One of the files/folders is not valid, Please check.")
+            End If
 
-            'Create the file's markdown page.
-            Dim filePage As String = ""
-
-            'Add in the mainPage about this file.
-            Dim tmpMain As String = ""
-            tmpMain += ("## [FILE_NAME](FILE_NAME)" + vbCrLf + vbCrLf).Replace("FILE_NAME", Path.GetFileNameWithoutExtension(file))
-
-            'Loop through all the pawndoc's
-            For Each mtch As Match In Regex.Matches(fileCode, "\/\*\*([\s\S]*?)\*\*\/")
-                'Parse the doc.
-                Dim pwnDoc As New PawnDoc(mtch.Groups(1).Value)
-
-                'Create the var to store the template.
-                Dim funcMark As String = My.Resources.funcTemplate1
-
-                'Check if valid.
-                If pwnDoc.Summary = "" Or pwnDoc.Summary = "-" Then Continue For
-
-                'Replace all variables.
-                funcMark = funcMark.Replace("FUNCTION_NAME", prepareFuncName(pwnDoc.Summary))
-                funcMark = funcMark.Replace("TEXT_IN_REMARKS_SECTION", prepareString(pwnDoc.Remarks, False))
-                funcMark = funcMark.Replace("LINES_OF_TEXT_IN_RETURNS_SECTION", prepareString(pwnDoc.Returns))
-                Dim pars As String = ""
-                For Each par In pwnDoc.Parameters
-                    pars += (">" + vbTab + "* `PARAM_NAME`: PARAM_INFO" + vbCrLf).Replace("PARAM_NAME", par.paramName).Replace("PARAM_INFO", par.paramExplain)
+            'If its a file: 
+            If File.Exists(fle) Then
+                'Parse the file normally and do it.
+                ParseAndAppendFile(fle, mainPage)
+            ElseIf Directory.Exists(fle) Then
+                'Get files, loop and do it.
+                Dim childFiles As String() = Directory.GetFiles(fle, "*.inc", SearchOption.TopDirectoryOnly) 'NOTE: This will get files at top directory only with the *.inc, Change if needed.
+                For Each fe In childFiles
+                    ParseAndAppendFile(fe, mainPage)
                 Next
-                funcMark = funcMark.Replace("LINES_OF_TEXT_IN_PARAMS_SECTION", pars.Trim)
-
-                'Append to the file's page.
-                filePage += funcMark
-
-                'Append to the main page.
-                tmpMain += ("* [FUNCTION_NAME_UP](FILE_NAME#FUNCTION_NAME_UNDER)" + vbCrLf).Replace("FILE_NAME", Path.GetFileNameWithoutExtension(file)).Replace("FUNCTION_NAME_UP", prepareFuncName(pwnDoc.Summary)).Replace("FUNCTION_NAME_UNDER", prepareFuncName(pwnDoc.Summary, True))
-            Next
-
-            'Now after we have all the files functions save it.
-            If filePage <> "" Then
-                'Save the actual file.
-                My.Computer.FileSystem.WriteAllText(TextBox2.Text + "/" + Path.GetFileNameWithoutExtension(file) + ".md", filePage, False)
-
-                'Append to main file.
-                mainPage += tmpMain + vbCrLf + vbCrLf
             End If
         Next
 
