@@ -12,7 +12,7 @@ Public Class Form1
 
         'Add in the mainPage about this file.
         Dim tmpMain As String = ""
-        tmpMain += ("## [FILE_NAME](FILE_NAME)" + vbCrLf + vbCrLf).Replace("FILE_NAME", Path.GetFileNameWithoutExtension(File))
+        tmpMain += ("## [FILE_NAME](FILE_NAME)" + vbCrLf + vbCrLf).Replace("FILE_NAME", Path.GetFileNameWithoutExtension(targetFile))
 
         'Loop through all the pawndoc's
         For Each mtch As Match In Regex.Matches(fileCode, "\/\*\*([\s\S]*?)\*\*\/")
